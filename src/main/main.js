@@ -1,4 +1,5 @@
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, Notification, session, shell } = require('electron')
+const fs = require('fs')
 const path = require('path')
 
 const HOME_URL = 'https://www.canva.com/'
@@ -15,7 +16,7 @@ const AUTH_HOSTS = [
   'clever.com',
 ]
 
-// Sign-in pop-ups keep this title so a window manager rule can float them.
+// Pop-ups keep this title so a window manager rule can float them.
 const POPUP_TITLE = 'Canva sign-in'
 
 app.setName('Canva')
@@ -48,11 +49,13 @@ function chromeUserAgent() {
     .replace(new RegExp(`\\s${app.getName()}/\\S+`, 'i'), '')
 }
 
-// Decide where a link that asks for a new window should go. Canva pages load in
-// the window they came from, sign-in pop-ups open as child windows, and
-// everything else goes to the default browser.
-function routeNewWindow(contents, url) {
-  if (isAuth(url)) return 'popup'
+// Decide where a request for a new window should go. Real pop-ups (window.open
+// with a size, which Canva uses for sign-in and connecting other apps) open as
+// child windows, so they can report back to the page that opened them. New-tab
+// links to Canva load in the window they came from, sign-in pages open as
+// pop-ups, and everything else goes to the default browser.
+function routeNewWindow(contents, url, disposition) {
+  if (disposition === 'new-window' || isAuth(url)) return 'popup'
   if (isCanva(url)) {
     contents.loadURL(url)
     return 'deny'
@@ -62,17 +65,49 @@ function routeNewWindow(contents, url) {
   return 'deny'
 }
 
+// Pick a free name in the Downloads folder: "Design.png", then "Design (1).png".
+function downloadPath(filename) {
+  const dir = app.getPath('downloads')
+  const ext = path.extname(filename)
+  const base = path.basename(filename, ext)
+  let candidate = path.join(dir, filename)
+  for (let i = 1; fs.existsSync(candidate); i++) {
+    candidate = path.join(dir, `${base} (${i})${ext}`)
+  }
+  return candidate
+}
+
+// Save exports straight to Downloads instead of asking every time, and say
+// where the file went when it finishes.
+function handleDownloads() {
+  session.defaultSession.on('will-download', (_event, item) => {
+    const savePath = downloadPath(item.getFilename())
+    item.setSavePath(savePath)
+
+    item.once('done', (_e, state) => {
+      if (state === 'completed') {
+        const note = new Notification({ title: 'Canva download complete', body: path.basename(savePath) })
+        note.on('click', () => shell.showItemInFolder(savePath))
+        note.show()
+      } else if (state === 'interrupted') {
+        new Notification({ title: 'Canva download failed', body: item.getFilename() }).show()
+      }
+    })
+  })
+}
+
 function attachHandlers(win) {
   const contents = win.webContents
 
-  contents.setWindowOpenHandler(({ url }) => {
-    const route = routeNewWindow(contents, url)
+  contents.setWindowOpenHandler(({ url, disposition, features }) => {
+    if (process.env.CANVA_DEBUG) console.log('window.open', JSON.stringify({ url, disposition, features }))
+    const route = routeNewWindow(contents, url, disposition)
     if (route === 'deny') return { action: 'deny' }
     return {
       action: 'allow',
       overrideBrowserWindowOptions: {
         parent: win,
-        width: 520,
+        width: 580,
         height: 720,
         show: route === 'popup',
         title: POPUP_TITLE,
@@ -120,7 +155,7 @@ function createWindow() {
     width: 1400,
     height: 900,
     title: 'Canva',
-    icon: path.join(__dirname, '../../resources/com.github.vikdevelop.canvadesktop.png'),
+    icon: path.join(__dirname, '../../resources/canva.png'),
     autoHideMenuBar: true,
     webPreferences: {
       spellcheck: true,
@@ -128,13 +163,10 @@ function createWindow() {
   })
 
   attachHandlers(mainWindow)
-
-  // Mouse back/forward buttons.
-  mainWindow.on('app-command', (_event, command) => {
-    const history = mainWindow.webContents.navigationHistory
-    if (command === 'browser-backward' && history.canGoBack()) history.goBack()
-    if (command === 'browser-forward' && history.canGoForward()) history.goForward()
-  })
+  if (process.env.CANVA_DEBUG) {
+    mainWindow.webContents.on('did-navigate', (_e, url) => console.log('navigated', url))
+    mainWindow.webContents.on('did-navigate-in-page', (_e, url) => console.log('in-page', url))
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -158,6 +190,21 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     app.userAgentFallback = chromeUserAgent()
+    // When a Canva account is set to open links in the desktop app, canva.com
+    // hands off with a canva:// link and waits. Nothing handles that on Linux
+    // (the system would pass it to the browser), so refuse it and take Canva's
+    // own "Continue in browser" route instead.
+    session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
+      if (process.env.CANVA_DEBUG) console.log('permission', permission, JSON.stringify(details))
+      if (permission !== 'openExternal' || !/^canva:/i.test(details.externalURL || '')) return callback(true)
+      callback(false)
+      const url = new URL(details.requestingUrl || contents.getURL())
+      if (isCanva(url.href) && !url.searchParams.has('continue_in_browser')) {
+        url.searchParams.set('continue_in_browser', 'true')
+        contents.loadURL(url.href)
+      }
+    })
+    handleDownloads()
     createWindow()
   })
 

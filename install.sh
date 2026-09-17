@@ -13,7 +13,7 @@ mkdir -p "$app_dir"
 cp -R "$repo/package.json" "$repo/src" "$repo/resources" "$app_dir/"
 
 install -Dm755 "$repo/linux/canva" "$HOME/.local/bin/canva"
-install -Dm644 "$repo/resources/com.github.vikdevelop.canvadesktop.png" \
+install -Dm644 "$repo/resources/canva.png" \
   "$HOME/.local/share/icons/hicolor/256x256/apps/canva-linux.png"
 
 # Replace a Canva web app made with Omarchy's web app installer, keeping a copy.

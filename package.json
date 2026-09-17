@@ -1,29 +1,13 @@
 {
   "name": "canva",
-  "version": "1.0",
-  "description": "Electron app of Canva.com webapp",
+  "version": "2.0.0",
+  "description": "Canva in its own window on Linux, run with the system Electron",
   "main": "src/main/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "CANVA_APP_DIR=. ./linux/canva"
   },
-  "repository": "https://github.com/vikdevelop/canvadesktop",
-  "keywords": [
-    "Electron",
-    "quick",
-    "start",
-    "tutorial",
-    "demo"
-  ],
+  "repository": "https://github.com/ctrts/canva-linux",
   "author": "vikdevelop",
   "license": "MIT",
-  "devDependencies": {
-    "electron": "^15.4.1",
-    "electron-packager": "^15.5.1"
-  },
-  "dependencies": {
-    "mksnapshot": "^0.1.0",
-    "yarn": "^1.22.18",
-    "yauzl": "^2.10.0"
-  },
-  "private": false
+  "private": true
 }
