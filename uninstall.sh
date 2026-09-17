@@ -10,6 +10,10 @@ rm -rf "$HOME/.local/share/canva-linux"
 rm -f "$HOME/.local/bin/canva" "$HOME/.local/share/icons/hicolor/256x256/apps/canva-linux.png"
 rm -f "$applications/Canva.desktop"
 
+# Forget this app as the handler for canva:// links.
+mimeapps="${XDG_CONFIG_HOME:-$HOME/.config}/mimeapps.list"
+[[ -f $mimeapps ]] && sed -i '/^x-scheme-handler\/canva=/d' "$mimeapps"
+
 if [[ -f $applications/Canva.desktop.webapp.bak ]]; then
   mv "$applications/Canva.desktop.webapp.bak" "$applications/Canva.desktop"
   echo "Restored the Omarchy Canva web app"

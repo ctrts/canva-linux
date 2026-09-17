@@ -24,4 +24,7 @@ fi
 install -Dm644 "$repo/linux/canva.desktop" "$applications/Canva.desktop"
 
 update-desktop-database "$applications" 2>/dev/null || true
+
+# Open canva:// links (Canva's "open in the desktop app") with this app.
+xdg-mime default Canva.desktop x-scheme-handler/canva
 echo "Installed. Launch Canva from the app launcher or run: canva"

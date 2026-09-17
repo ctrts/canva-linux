@@ -41,6 +41,20 @@ function isAuth(url) {
   return AUTH_HOSTS.some((h) => host === h || host.endsWith('.' + h))
 }
 
+// Find the page to open among launch arguments: a canva.com link, or a canva://
+// link from Canva's "open in the desktop app" (canva://url/design/... maps to
+// https://www.canva.com/design/...).
+function urlFromArgs(argv) {
+  for (const arg of argv) {
+    if (isCanva(arg)) return arg
+    if (/^canva:\/\//i.test(arg)) {
+      const rest = arg.replace(/^canva:\/\/(url\/?)?/i, '')
+      return new URL(rest, HOME_URL).href
+    }
+  }
+  return null
+}
+
 // Canva and Google refuse or degrade for browsers that announce themselves as
 // Electron, so present the plain Chrome user agent Electron is built on.
 function chromeUserAgent() {
@@ -177,7 +191,7 @@ function createWindow() {
     mainWindow = null
   })
 
-  const startUrl = process.argv.find((arg) => isCanva(arg)) || HOME_URL
+  const startUrl = urlFromArgs(process.argv.slice(1)) || HOME_URL
   mainWindow.loadURL(startUrl)
 }
 
@@ -187,7 +201,7 @@ if (!app.requestSingleInstanceLock()) {
   // Launching Canva again focuses the open window instead of starting another.
   app.on('second-instance', (_event, argv) => {
     if (!mainWindow) return createWindow()
-    const url = argv.find((arg) => isCanva(arg))
+    const url = urlFromArgs(argv.slice(1))
     if (url) mainWindow.loadURL(url)
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.focus()
