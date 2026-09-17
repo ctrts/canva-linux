@@ -30,7 +30,7 @@ Launch Canva from the app launcher, or run `canva`.
 - **Other websites** open in your default browser.
 - **Desktop app handoff.** If your Canva account is set to open links in the desktop app, the `canva://` handoff is skipped and Canva continues in the window.
 - **Downloads** save straight to `~/Downloads` (with ` (1)` added if the name is taken). A notification shows the file name; click it to open the folder.
-- **Back and forward** with Alt+Left/Right.
+- **No menu bar.** Keyboard shortcuts: Alt+Left/Right go back and forward, F5 or Ctrl+R reloads (Ctrl+Shift+R skips the cache), F12 or Ctrl+Shift+I opens developer tools. All other keys go to Canva.
 
 On Hyprland, float the sign-in pop-up with this rule:
 

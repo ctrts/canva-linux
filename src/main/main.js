@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Notification, session, shell } = require('electron')
+const { app, BrowserWindow, Menu, Notification, session, shell } = require('electron')
 const fs = require('fs')
 const path = require('path')
 
@@ -111,7 +111,6 @@ function attachHandlers(win) {
         height: 720,
         show: route === 'popup',
         title: POPUP_TITLE,
-        autoHideMenuBar: true,
       },
     }
   })
@@ -137,16 +136,23 @@ function attachHandlers(win) {
     }, 10000)
   })
 
-  // Back and forward with Alt+Left/Right, as in a browser.
+  // There is no menu bar, so the few browser shortcuts worth keeping live here.
+  // Everything else (including Ctrl+Plus/Minus, which Canva uses for zoom)
+  // goes to the page.
   contents.on('before-input-event', (event, input) => {
-    if (input.type !== 'keyDown' || !input.alt) return
-    if (input.key === 'ArrowLeft' && contents.navigationHistory.canGoBack()) {
-      contents.navigationHistory.goBack()
-      event.preventDefault()
-    } else if (input.key === 'ArrowRight' && contents.navigationHistory.canGoForward()) {
-      contents.navigationHistory.goForward()
-      event.preventDefault()
-    }
+    if (input.type !== 'keyDown') return
+    const history = contents.navigationHistory
+    const key = input.key
+    let handled = true
+
+    if (input.alt && key === 'ArrowLeft' && history.canGoBack()) history.goBack()
+    else if (input.alt && key === 'ArrowRight' && history.canGoForward()) history.goForward()
+    else if (key === 'F5' || (input.control && !input.shift && key.toLowerCase() === 'r')) contents.reload()
+    else if (input.control && input.shift && key.toLowerCase() === 'r') contents.reloadIgnoringCache()
+    else if (key === 'F12' || (input.control && input.shift && key.toLowerCase() === 'i')) contents.toggleDevTools()
+    else handled = false
+
+    if (handled) event.preventDefault()
   })
 }
 
@@ -156,7 +162,6 @@ function createWindow() {
     height: 900,
     title: 'Canva',
     icon: path.join(__dirname, '../../resources/canva.png'),
-    autoHideMenuBar: true,
     webPreferences: {
       spellcheck: true,
     },
@@ -187,6 +192,9 @@ if (!app.requestSingleInstanceLock()) {
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.focus()
   })
+
+  // No File/Edit/View menu bar; it doesn't match the desktop around it.
+  Menu.setApplicationMenu(null)
 
   app.whenReady().then(() => {
     app.userAgentFallback = chromeUserAgent()
