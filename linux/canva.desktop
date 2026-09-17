@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Canva
+Comment=Design with Canva
+Exec=canva %U
+Terminal=false
+Type=Application
+Icon=canva-linux
+Categories=Graphics;
+StartupWMClass=canva
+StartupNotify=true

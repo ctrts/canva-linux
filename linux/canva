@@ -1,0 +1,13 @@
+#!/bin/bash
+# Launch Canva with the newest Electron installed from the Arch repos.
+
+app_dir="${CANVA_APP_DIR:-$HOME/.local/share/canva-linux}"
+electron=$(compgen -c electron | command grep -E '^electron[0-9]+$' | sort -V | tail -1)
+
+if [[ -z $electron ]]; then
+  notify-send "Canva" "No Electron found. Install one with: omarchy pkg add electron" 2>/dev/null
+  echo "No electron found. Install one with: omarchy pkg add electron" >&2
+  exit 1
+fi
+
+exec "$electron" --ozone-platform-hint=auto "$app_dir" "$@"

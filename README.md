@@ -8,6 +8,30 @@ A lightweight Electron wrapper that runs the Canva web app as a simple desktop a
 - Packaged for Flatpak for easy per-user installation
 - Minimal wrapper to preserve the web experience while giving a native-like window
 
+## Install on Arch / Omarchy (no Flatpak)
+
+Runs on the newest `electronNN` package already on the system (install one with `omarchy pkg add electron` if none is present), natively on Wayland.
+
+```bash
+./install.sh     # app in ~/.local/share/canva-linux, `canva` in ~/.local/bin, launcher entry
+./uninstall.sh   # remove it (add --purge to also delete sign-in data in ~/.config/Canva)
+```
+
+How windows behave:
+
+- Canva links that would open a new tab or window load in the same Canva window.
+- Google, Apple, Facebook and Microsoft sign-in open as a small pop-up titled "Canva sign-in".
+- Other links open in your default browser.
+- Starting Canva again focuses the running window. Alt+Left/Right go back and forward.
+
+On Hyprland, float the sign-in pop-up with:
+
+```lua
+o.window({ class = "^canva$", title = "^Canva sign-in$" }, { float = true, center = true, size = { 520, 720 } })
+```
+
+## Flatpak (original)
+
 ## Requirements
 
 - Flatpak installed on your system
